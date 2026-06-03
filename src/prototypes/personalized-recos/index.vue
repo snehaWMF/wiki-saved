@@ -964,6 +964,7 @@ function toggleSave(article: ArticleCard, isImage = false) {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: top;
   display: block;
 }
 
