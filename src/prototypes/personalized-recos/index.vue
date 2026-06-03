@@ -279,12 +279,19 @@ async function fetchImages(topic: string) {
     const topicPicked = rotated.slice(0, 3)
     const relatedPicked = relatedImgsArrays.map(imgs => imgs[0]).filter(Boolean) as ImageCard[]
 
-    // Interleave: topic, related, topic, related, topic
+    // Interleave: topic, related, topic, related, topic — deduplicate by imageUrl
+    const seen = new Set<string>()
     const mixed: ImageCard[] = []
     const maxLen = Math.max(topicPicked.length, relatedPicked.length)
     for (let i = 0; i < maxLen && mixed.length < 5; i++) {
-      if (topicPicked[i]) mixed.push(topicPicked[i])
-      if (mixed.length < 5 && relatedPicked[i]) mixed.push(relatedPicked[i])
+      if (topicPicked[i] && !seen.has(topicPicked[i].imageUrl)) {
+        seen.add(topicPicked[i].imageUrl)
+        mixed.push(topicPicked[i])
+      }
+      if (mixed.length < 5 && relatedPicked[i] && !seen.has(relatedPicked[i].imageUrl)) {
+        seen.add(relatedPicked[i].imageUrl)
+        mixed.push(relatedPicked[i])
+      }
     }
 
     imagesByTopic.value = { ...imagesByTopic.value, [topic]: mixed }
@@ -586,18 +593,18 @@ function toggleSave(article: ArticleCard, isImage = false) {
                 :key="img.imageUrl"
                 class="gallery-card"
               >
-                <a :href="img.href" target="_blank" rel="noopener noreferrer" class="gallery-card__link">
-                  <div class="gallery-card__img-wrap">
-                    <img :src="img.imageUrl" :alt="img.caption" class="gallery-card__img" />
-                    <button
-                      :class="['recos-view__card-save', isSaved(img.imageUrl) && 'recos-view__card-save--saved']"
-                      :aria-label="isSaved(img.imageUrl) ? 'Unsave' : 'Save'"
-                      @click.prevent.stop="toggleSave({ title: img.caption || img.href, extract: '', thumbnailSrc: img.imageUrl, href: img.href }, true)"
-                    >
-                      <CdxIcon :icon="isSaved(img.imageUrl) ? cdxIconBookmark : cdxIconBookmarkOutline" />
-                    </button>
-                  </div>
-                </a>
+                <!-- Image with save button -->
+                <div class="gallery-card__img-wrap">
+                  <img :src="img.imageUrl" :alt="img.caption" class="gallery-card__img" />
+                  <button
+                    :class="['recos-view__card-save', isSaved(img.imageUrl) && 'recos-view__card-save--saved']"
+                    :aria-label="isSaved(img.imageUrl) ? 'Unsave' : 'Save'"
+                    @click.prevent.stop="toggleSave({ title: img.caption || img.href, extract: '', thumbnailSrc: img.imageUrl, href: img.href }, true)"
+                  >
+                    <CdxIcon :icon="isSaved(img.imageUrl) ? cdxIconBookmark : cdxIconBookmarkOutline" />
+                  </button>
+                </div>
+                <!-- Caption as blue link -->
                 <p v-if="img.caption" class="gallery-card__caption">{{ img.caption }}</p>
               </div>
             </div>
@@ -1352,31 +1359,23 @@ function toggleSave(article: ArticleCard, isImage = false) {
 
 /* ── Photo gallery (image mode) ── */
 .recos-view__gallery {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-auto-rows: 1fr;
-  gap: var(--spacing-150, 24px);
-  align-items: stretch;
+  columns: 5;
+  column-gap: var(--spacing-150, 24px);
 }
 
-@media (max-width: 1199px) {
-  .recos-view__gallery { grid-template-columns: repeat(4, 1fr); }
-}
-
-@media (max-width: 839px) {
-  .recos-view__gallery { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (max-width: 599px) {
-  .recos-view__gallery { grid-template-columns: repeat(2, 1fr); }
-}
+@media (max-width: 1199px) { .recos-view__gallery { columns: 4; } }
+@media (max-width: 839px)  { .recos-view__gallery { columns: 3; } }
+@media (max-width: 599px)  { .recos-view__gallery { columns: 2; } }
 
 .gallery-card {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-50, 8px);
   color: inherit;
-  height: 100%;
+  border: 1px solid #a2a9b1;
+  background-color: #f8f9fa;
+  padding: 4px;
+  break-inside: avoid;
+  margin-bottom: var(--spacing-150, 24px);
 }
 
 .gallery-card__link {
@@ -1386,37 +1385,26 @@ function toggleSave(article: ArticleCard, isImage = false) {
 }
 
 .gallery-card__img-wrap {
-  position: relative;
   width: 100%;
-  /* Fixed square via aspect-ratio; flex-shrink:0 keeps it from squashing */
-  aspect-ratio: 1;
-  flex-shrink: 0;
   overflow: hidden;
-  border-radius: var(--border-radius-base, 2px);
-  background-color: var(--background-color-interactive, #f8f9fa);
+  border-radius: 0;
+  background-color: #fff;
 }
 
 .gallery-card__img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: top;
+  height: auto;
   display: block;
-  transition: transform 200ms ease;
-}
-
-.gallery-card:hover .gallery-card__img {
-  transform: scale(1.03);
 }
 
 .gallery-card__caption {
-  margin: 0;
-  font-size: var(--font-size-x-small);
-  font-style: italic;
-  color: var(--color-subtle);
+  margin: 6px 2px 2px;
+  font-size: var(--font-size-small);
+  font-style: normal;
+  color: var(--color-base);
   line-height: 1.4;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
