@@ -65,8 +65,8 @@ export const DEFAULT_CONFIG: Config = {
 
 export const CONFIG_USER_DISPLAY_NAMES: Record<ConfigUser, string> = {
   'logged-out': 'LoggedOut',
-  new: 'Username',
-  experienced: 'Username',
+  new: 'Username1982',
+  experienced: 'Username1982',
 }
 
 export const CONFIG_USER_MENU_ITEMS: { value: ConfigUser; label: string }[] = [
