@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { CdxButton, CdxIcon, CdxTypeaheadSearch, CdxProgressBar, CdxTabs, CdxTab } from '@wikimedia/codex'
 import type { SearchResult, SearchResultClickEvent } from '@wikimedia/codex'
@@ -416,6 +416,30 @@ function setViewMode(mode: ViewMode) {
   }
 }
 
+// Cycle order: articles → quotes → images → articles
+const VIEW_CYCLE: ViewMode[] = ['articles', 'quotes', 'images']
+
+const nextViewMode = computed<ViewMode>(() => {
+  const idx = VIEW_CYCLE.indexOf(viewMode.value)
+  return VIEW_CYCLE[(idx + 1) % VIEW_CYCLE.length]
+})
+
+const nextViewIcon = computed(() => {
+  if (nextViewMode.value === 'quotes') return cdxIconQuotes
+  if (nextViewMode.value === 'images') return cdxIconImage
+  return cdxIconArticles
+})
+
+const nextViewLabel = computed(() => {
+  if (nextViewMode.value === 'quotes') return 'Switch to quotes view'
+  if (nextViewMode.value === 'images') return 'Switch to image view'
+  return 'Switch to article view'
+})
+
+function cycleViewMode() {
+  setViewMode(nextViewMode.value)
+}
+
 // ── Saved pages & images ──
 const savedArticles = ref<ArticleCard[]>([])
 const savedImages = ref<ArticleCard[]>([])
@@ -560,16 +584,10 @@ function toggleSave(article: ArticleCard, isImage = false) {
                 Edit interest
               </button>
 
-              <!-- Mode buttons + refresh at the far right -->
+              <!-- Mode toggle — shows next mode's icon, cycles articles → quotes → images -->
               <div class="recos-view__mode-buttons">
-                <CdxButton weight="quiet" :icon-only="true" aria-label="Article view" :class="['recos-view__mode-btn', viewMode === 'articles' && 'recos-view__mode-btn--active']" @click="setViewMode('articles')">
-                  <CdxIcon :icon="cdxIconArticles" />
-                </CdxButton>
-                <CdxButton weight="quiet" :icon-only="true" aria-label="Quotes view" :class="['recos-view__mode-btn', viewMode === 'quotes' && 'recos-view__mode-btn--active']" @click="setViewMode('quotes')">
-                  <CdxIcon :icon="cdxIconQuotes" />
-                </CdxButton>
-                <CdxButton weight="quiet" :icon-only="true" aria-label="Image view" :class="['recos-view__mode-btn', viewMode === 'images' && 'recos-view__mode-btn--active']" @click="setViewMode('images')">
-                  <CdxIcon :icon="cdxIconImage" />
+                <CdxButton weight="quiet" :icon-only="true" :aria-label="nextViewLabel" class="recos-view__mode-btn" @click="cycleViewMode">
+                  <CdxIcon :icon="nextViewIcon" />
                 </CdxButton>
                 <!-- refresh button hidden for now
                 <span class="recos-view__mode-divider" />
@@ -920,9 +938,58 @@ function toggleSave(article: ArticleCard, isImage = false) {
 
 @media (max-width: 599px) {
   .recos-view__cards {
-    grid-template-columns: repeat(2, 1fr);
-    /* (100vw - 1*32px) / 2 * 0.75 = 37.5vw - 12px */
-    grid-auto-rows: calc(37.5vw - 12px + 1rem * 1.3 + 0.875rem * 1.4 * 4 + 0.25rem + 1.5rem);
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: var(--spacing-100, 16px);
+    /* clip so the peeking next card doesn't scroll the page */
+    padding-inline-start: var(--spacing-150, 24px);
+    padding-inline-end: var(--spacing-150, 24px);
+    /* cancel the fixed row height set above */
+    grid-auto-rows: unset;
+  }
+
+  .recos-view__cards::-webkit-scrollbar {
+    display: none;
+  }
+
+  .recos-view__card-wrapper {
+    flex: 0 0 78vw;
+    scroll-snap-align: start;
+    min-height: 0;
+  }
+
+  .recos-view__card-image {
+    height: 32vw;
+  }
+
+  .recos-view__card-img {
+    height: 100%;
+  }
+
+  .recos-view__card-body {
+    padding: var(--spacing-50, 8px);
+    gap: var(--spacing-25, 4px);
+  }
+
+  .recos-view__card-title {
+    font-size: var(--font-size-small, 0.875rem);
+    padding-right: var(--spacing-150, 24px);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .recos-view__card-extract {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.75rem;
   }
 }
 
