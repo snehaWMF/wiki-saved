@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, computed } from 'vue'
+import { ref, nextTick, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { CdxButton, CdxIcon, CdxTypeaheadSearch, CdxProgressBar, CdxTabs, CdxTab } from '@wikimedia/codex'
 import type { SearchResult, SearchResultClickEvent } from '@wikimedia/codex'
@@ -11,7 +11,11 @@ import PrototypeUserSettingsPopover from '@/components/PrototypeUserSettingsPopo
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
 import { useConfig } from '@/composables/useConfig'
 
-const { displayName } = useConfig()
+const { displayName, user } = useConfig()
+
+onMounted(() => {
+  if (user.value === 'logged-out') user.value = 'new'
+})
 
 definePage({
   meta: {

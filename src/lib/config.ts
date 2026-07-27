@@ -208,9 +208,10 @@ export function loadConfig(): Config {
     const realUsername =
       typeof record.realUsername === 'string' ? record.realUsername : DEFAULT_CONFIG.realUsername
 
+    const user = isConfigUser(record.user) ? record.user : DEFAULT_CONFIG.user
     return {
       theme: isConfigTheme(record.theme) ? record.theme : DEFAULT_CONFIG.theme,
-      user: isConfigUser(record.user) ? record.user : DEFAULT_CONFIG.user,
+      user: user === 'logged-out' ? 'new' : user,
       realUsername,
       userPageLists: mergeUserPageListsMap(record.userPageLists),
     }
